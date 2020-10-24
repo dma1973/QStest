@@ -1,0 +1,246 @@
+<html lang="ru">
+<head>
+    <title>QSystems TestTask</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width">
+
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css">
+    <script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+    
+    <script  src="http://www.flotcharts.org/flot/source/jquery.canvaswrapper.js"></script>
+    <script  src="http://www.flotcharts.org/flot/source/jquery.colorhelpers.js"></script>
+    <script  src="http://www.flotcharts.org/flot/source/jquery.flot.js"></script>
+    <script  src="http://www.flotcharts.org/flot/source/jquery.flot.saturated.js"></script>
+    <script  src="http://www.flotcharts.org/flot/source/jquery.flot.browser.js"></script>
+    <script  src="http://www.flotcharts.org/flot/source/jquery.flot.drawSeries.js"></script>
+    <script  src="http://www.flotcharts.org/flot/source/jquery.flot.uiConstants.js"></script>
+    <script  src="http://www.flotcharts.org/flot/source/jquery.flot.navigate.js"></script>
+    <script  src="http://www.flotcharts.org/flot/source/jquery.flot.touchNavigate.js"></script>
+    <script  src="http://www.flotcharts.org/flot/source/jquery.flot.hover.js"></script>
+    <script  src="http://www.flotcharts.org/flot/source/jquery.flot.touch.js"></script>
+    <script  src="http://www.flotcharts.org/flot/source/jquery.flot.time.js"></script>
+    <script  src="http://www.flotcharts.org/flot/source/jquery.flot.selection.js"></script>
+    <script  src="http://www.flotcharts.org/flot/source/jquery.flot.resize.js"></script>
+           
+    <style type="text/css" class="init">
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+        table {
+             border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+    </style> 
+    <script type="text/javascript">
+        jQuery(function ($) {
+            $.datepicker.regional['ru'] = {
+                closeText: 'Закрыть',
+                prevText: '&#x3c;Пред',
+                nextText: 'След&#x3e;',
+                currentText: 'Сегодня',
+                monthNames: ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+                'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'],
+                monthNamesShort: ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+                'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'],
+                dayNames: ['воскресенье', 'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота'],
+                dayNamesShort: ['вск', 'пнд', 'втр', 'срд', 'чтв', 'птн', 'сбт'],
+                dayNamesMin: ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'],
+                weekHeader: 'Не',
+                firstDay: 1,
+                isRTL: false,
+                showMonthAfterYear: false,
+                dateFormat: 'yy-mm-dd',
+                yearSuffix: ''
+            };
+            $.datepicker.setDefaults($.datepicker.regional['ru']);
+        });
+        function formatDate(date) {
+            var d = new Date(date),
+                month = '' + (d.getMonth() + 1),
+                day = '' + d.getDate(),
+                year = d.getFullYear();
+                if (month.length < 2)  month = '0' + month;
+                if (day.length < 2) day = '0' + day;
+                return [year, month, day].join('-');
+        }  
+    </script> 
+    <script type="text/javascript">
+            $(function(){
+                $('#sel_date').datepicker({
+                    onSelect: function( newText ){}	
+                });
+                $('#query').on( "click", function() {
+                    if( $('#sel_date').val().length<8) alert("выберете дату сначала...");
+                    else{
+                        $("#dat").text("Идет запрос данных...");
+                        $("#tab").html("");
+                        $.ajax({
+                            url: "exchangerate/rates/?date="+$('#sel_date').val(),
+                            success:function(data){
+                                draw_table(data);
+                            },
+                            error:function(data){
+                                $("#dat").text("Ошибка на сервере:( ");
+                            }
+                        });
+                    }
+                });          
+            });
+    </script>
+    
+    <script type="text/javascript">
+            $(function(){   
+                $.ajax({
+                    url: "exchangerate/currencys/",
+                    success:function(data){
+                        fill_curr(data);
+                    }
+                });     
+            });
+            function fill_curr(data){
+                $.each(data, function(key, val) {
+                    $('#sel_cur').append('<option value="' + val.curr_ID + '">' + val.name + '</option>');
+                });
+             }
+    </script>
+    
+    <script type="text/javascript">
+            $(function(){
+                $('#sel_date').val(formatDate((new Date).toLocaleDateString()));
+                $.ajax({
+                    url: "exchangerate/rates/?date="+$('#sel_date').val(),
+                    success:function(data){
+                        draw_table(data);
+                    },
+                    error:function(data){
+                        $("#dat").text("Ошибка на сервере:( ");
+                    }
+                });     
+            });
+    </script>
+    
+    <script type="text/javascript">
+   
+    function draw_table(data){
+        $("#dat").text("Курсы валют ЦБР на  "+$('#sel_date').val());
+        $("#tab").html(
+            '<table style="width:100%" id="tab_data">'+
+                '<thead>'+
+                    '<tr>'+
+                        '<th>Наиметование</th>'+
+                        '<th>Код</th>'+
+                        '<th>Кол-во</th>'+
+                        '<th>Курс</th>'+
+                        '<th>Обновлено</th>'+
+                    '</tr>'+
+                '</thead>'+      
+            '</table>');
+        var table = $('#tab_data').DataTable( {
+            "aaData": data,
+            "columns":[
+                { "data": "name" },
+                { "data": "charCode"},
+                { "data": "normal" },
+                { "data": "value" },
+                { "data": "updated" }            
+            ]
+        }); 
+    };
+    </script>
+    <script type="text/javascript">
+            $(function(){
+                $('#sel_date0').datepicker({
+                    onSelect: function( newText ){}	
+                });
+                $('#sel_date1').datepicker({
+                    onSelect: function( newText ){}	
+                }); 
+                $('#sel_date0').val(formatDate((new Date).toLocaleDateString()));
+                $('#sel_date1').val(formatDate((new Date).toLocaleDateString()));
+                $('#query_trend').on( "click", function() {
+                     $("#tab_trend").html="";
+                     $("#tab_plot").html="";
+                     $("#dat_trend").text("");
+                     $.ajax({  
+                            url: "exchangerate/trend/?id="+$('#sel_cur').val()+"&from_date="+$('#sel_date0').val()+"&to_date="+$('#sel_date1').val(),
+                            success:function(data){
+                                draw_trend(data);
+                                draw_plot(data);
+                            }
+                    });
+                }); 
+            });
+            function draw_trend(data){
+                $("#dat_trend").text($('#sel_cur').find('option:selected').text() +': c '+$('#sel_date0').val()+' по '+$('#sel_date1').val());
+                $("#tab_trend").html(
+                    '<table style="width:100%" id="tab_data1">'+
+                        '<thead>'+
+                            '<tr>'+
+                            '<th>Дата</th>'+
+                            '<th>Курс</th>'+
+                        '</tr>'+
+                        '</thead>'+      
+                    '</table>');
+                var table_trend = $('#tab_data1').DataTable( {
+                    "aaData": data,
+                    "columns":[
+                        { "data": "updated" },
+                        { "data": "value" }            
+                    ]
+                }); 
+            }; 
+            function draw_plot(data){   
+                var d1 = [];
+		for (var i = 0; i < data.length; ++i) {
+			d1.push([$.datepicker.parseDate("yy-mm-dd",data[i].updated), data[i].value]);
+		};
+                var opts = {
+			xaxis: {
+				mode: "time",
+				timeBase: "milliseconds",
+				tickLength: 5,
+                                timeformat: "%Y-%m-%d"
+			},
+                        series: {
+                            color:"rgba(255, 0, 255, 0.8)"
+                            
+                        }
+		};
+                var plot = $.plot("#tab_plot", [d1],opts);
+
+            }
+    </script>   
+</head>
+
+<body>	
+    <div>
+       Выбрать дату:     <input id="sel_date" type="text"><button  id="query">Запросить данные</button> 
+       <h3 id="dat" style="width: 30%">Идет загузка ...</h3>    
+    </div>	
+    
+    <div id="tab"></div> 
+    <div style="width:100%; text-align: center"><h3>Посмотреть тренд</h3>  </div>
+    <table style="border: 0px solid white;">
+        <tr>
+           <td style="border: 10px solid white;"><div>Выбрать начальную дату: &emsp;&emsp;&emsp;&emsp;&emsp;&nbsp;&nbsp;<input id="sel_date0" type="text"></div></td>
+           <td style="border: 10px solid white;"><div>Выбрать конечную дату: <input id="sel_date1" type="text"></div></td>
+        </tr>
+        <tr>
+            <td style="border: 10px solid white;"><div >Выбрать валюту:    <select id="sel_cur"></select></div></td>
+            <td style="border: 10px solid white; text-align: right"><div><button  id="query_trend">Запросить данные</button></div></td>
+        </tr>
+    </table>  
+    <h3 id="dat_trend">&emsp; </h3>
+    <div id="tab_trend" style="width: 40%; float:left"></div> 
+    <div id="tab_plot" style="width: 60%; height: 450px; float:left"></div> 
+</body>
+</html>
+	
+
